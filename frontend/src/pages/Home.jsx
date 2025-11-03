@@ -13,7 +13,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get('/products')
+        const res = await api.get('/api/products')
         setProducts(res.data)
       } catch (e) {
         setError(e?.response?.data?.message || 'Failed to load products')
