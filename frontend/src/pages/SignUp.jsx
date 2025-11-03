@@ -15,7 +15,7 @@ export default function SignUp() {
     e.preventDefault()
     setError('')
     try {
-      const res = await api.post('/auth/signup', { name, email, password })
+      const res = await api.post('/api/auth/signup', { name, email, password })
       signIn(res.data.token, res.data.user)
       navigate('/')
     } catch (e) {
