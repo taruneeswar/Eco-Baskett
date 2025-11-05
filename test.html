@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco Basket - API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .status {
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 4px solid #16a34a; }
+        .error { border-left: 4px solid #dc2626; }
+        .loading { border-left: 4px solid #f59e0b; }
+        h1 { color: #16a34a; }
+        button {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #15803d; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛒 Eco Basket - API Connection Test</h1>
+    
+    <div id="backend-status" class="status loading">
+        <h3>Backend Status</h3>
+        <p>Testing connection to http://localhost:5000...</p>
+    </div>
+    
+    <div id="products-status" class="status loading">
+        <h3>Products API Status</h3>
+        <p>Testing connection to http://localhost:5000/api/products...</p>
+    </div>
+    
+    <div id="product-list" style="display:none;">
+        <h2>Products Retrieved:</h2>
+        <div id="products"></div>
+    </div>
+    
+    <button onclick="window.location.href='http://localhost:5173'" style="margin-top: 20px;">
+        Open Eco Basket App
+    </button>
+
+    <script>
+        // Test Backend
+        fetch('http://localhost:5000')
+            .then(res => res.text())
+            .then(text => {
+                document.getElementById('backend-status').className = 'status success';
+                document.getElementById('backend-status').innerHTML = `
+                    <h3>✅ Backend Status: ONLINE</h3>
+                    <p>Response: ${text}</p>
+                `;
+            })
+            .catch(err => {
+                document.getElementById('backend-status').className = 'status error';
+                document.getElementById('backend-status').innerHTML = `
+                    <h3>❌ Backend Status: OFFLINE</h3>
+                    <p>Error: ${err.message}</p>
+                    <p>Make sure backend server is running on port 5000</p>
+                `;
+            });
+
+        // Test Products API
+        fetch('http://localhost:5000/api/products')
+            .then(res => res.json())
+            .then(products => {
+                document.getElementById('products-status').className = 'status success';
+                document.getElementById('products-status').innerHTML = `
+                    <h3>✅ Products API: WORKING</h3>
+                    <p>Found ${products.length} products</p>
+                `;
+                
+                document.getElementById('product-list').style.display = 'block';
+                document.getElementById('products').innerHTML = products.slice(0, 5).map(p => `
+                    <div style="padding: 10px; margin: 5px 0; background: white; border-radius: 4px;">
+                        <strong>${p.name}</strong> - ₹${p.price}
+                    </div>
+                `).join('');
+            })
+            .catch(err => {
+                document.getElementById('products-status').className = 'status error';
+                document.getElementById('products-status').innerHTML = `
+                    <h3>❌ Products API: FAILED</h3>
+                    <p>Error: ${err.message}</p>
+                    <p>Check if backend is running</p>
+                `;
+            });
+    </script>
+</body>
+</html>
