@@ -110,6 +110,60 @@ router.post('/verify-payment', async (req, res) => {
   }
 });
 
+// Create Cash on Delivery order
+router.post('/create-cod-order', async (req, res) => {
+  try {
+    const { deliveryAddress, deliveryPhone } = req.body;
+
+    if (!deliveryAddress || !deliveryPhone) {
+      return res.status(400).json({ message: 'Delivery address and phone are required' });
+    }
+
+    // Get user's cart
+    const user = await User.findById(req.userId).populate('cart.product');
+    if (!user || user.cart.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    // Calculate total
+    const totalAmount = user.cart.reduce((sum, item) => {
+      return sum + (item.product.price * item.qty);
+    }, 0);
+
+    // Create COD order in database
+    const order = await Order.create({
+      user: req.userId,
+      items: user.cart.map((item) => ({
+        product: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        qty: item.qty,
+      })),
+      totalAmount,
+      paymentMethod: 'cod',
+      paymentStatus: 'pending', // COD payment is pending until delivery
+      deliveryAddress,
+      deliveryPhone,
+    });
+
+    // Clear user's cart
+    await User.findByIdAndUpdate(req.userId, { cart: [] });
+
+    res.json({
+      message: 'Order placed successfully',
+      order: {
+        _id: order._id,
+        totalAmount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to create COD order', error: err.message });
+  }
+});
+
 // Get user's orders
 router.get('/orders', async (req, res) => {
   try {

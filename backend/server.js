@@ -11,12 +11,14 @@ const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
-// ✅ CORS setup — remove trailing slash from Netlify URL
+// ✅ CORS setup — allow localhost and local network
 app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      'https://ecobaskett.netlify.app', // ✅ no trailing slash
+      'http://192.168.137.221:5173', // Local network access
+      /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // Any local network IP
+      'https://ecobaskett.netlify.app',
     ],
     credentials: true,
   })

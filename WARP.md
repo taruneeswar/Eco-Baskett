@@ -62,7 +62,7 @@ npm run preview                # Preview production build
 **Backend** (`backend/.env`):
 ```
 PORT=5000
-MONGODB_URI=mongodb://127.0.0.1:27017/ecobasket
+MONGODB_URI=mongodb+srv://taruneeswar:tarun123@ecobasket.dsz6boh.mongodb.net/
 JWT_SECRET=your-secret-here
 ```
 

@@ -15,6 +15,7 @@ const OrderSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: [OrderItemSchema],
     totalAmount: { type: Number, required: true },
+    paymentMethod: { type: String, enum: ['online', 'cod'], default: 'online' },
     paymentStatus: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },

@@ -63,7 +63,7 @@ cd "C:\Users\tarun\Music\MSD project"
 4. ✅ You should be signed in and redirected to home page
 
 ### 2. Sign In (Existing Account)
-1. Go to: http://localhost:5173/signin
+1. Go to: http://:5173/signin
 2. Use existing credentials:
    - Email: tarun@gmail.com
    - Password: tarun123

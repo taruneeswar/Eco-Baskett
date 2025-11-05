@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ecobasket';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://taruneeswar:tarun123@ecobasket.dsz6boh.mongodb.net/';
 
 module.exports = async function connectDB() {
   if (!MONGODB_URI) throw new Error('MONGODB_URI is not defined');
