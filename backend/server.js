@@ -42,6 +42,15 @@ app.get('/', (req, res) => {
   res.send('Eco Basket API');
 });
 
+// Backward-compatible routes for clients still calling without /api prefix.
+app.get('/products', (req, res) => {
+  res.redirect(307, '/api/products');
+});
+
+app.get('/products/:id', (req, res) => {
+  res.redirect(307, `/api/products/${req.params.id}`);
+});
+
 // ✅ Database test route
 app.get('/test-db', async (req, res) => {
   const state = mongoose.connection.readyState;
