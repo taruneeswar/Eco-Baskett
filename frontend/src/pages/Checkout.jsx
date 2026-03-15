@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuth } from '../state/AuthContext'
 import { formatINR } from '../utils/format'
@@ -9,7 +9,12 @@ import UpiQrPayment from '../components/UpiQrPayment'
 export default function Checkout() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const buyNowProductId = searchParams.get('buyNow')
+  const buyNowQty = Math.max(1, Number(searchParams.get('qty')) || 1)
+  const isBuyNow = Boolean(buyNowProductId)
   const [items, setItems] = useState([])
+  const [buyNowItem, setBuyNowItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cod') // 'online' or 'cod'
@@ -19,8 +24,25 @@ export default function Checkout() {
   const [deliveryPhone, setDeliveryPhone] = useState(user?.phone || '')
 
   useEffect(() => {
+    if (isBuyNow) {
+      fetchBuyNowProduct()
+      return
+    }
     fetchCart()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBuyNow, buyNowProductId, buyNowQty])
+
+  const fetchBuyNowProduct = async () => {
+    try {
+      const { data } = await api.get(`/products/${buyNowProductId}`)
+      setBuyNowItem({ product: data, qty: buyNowQty })
+    } catch (err) {
+      toast.error('Unable to load selected product')
+      navigate('/')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchCart = async () => {
     try {
@@ -33,7 +55,8 @@ export default function Checkout() {
     }
   }
 
-  const total = items.reduce((sum, i) => sum + i.qty * (i.product?.price || 0), 0)
+  const orderItems = isBuyNow ? (buyNowItem ? [buyNowItem] : []) : items
+  const total = orderItems.reduce((sum, i) => sum + i.qty * (i.product?.price || 0), 0)
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -51,8 +74,8 @@ export default function Checkout() {
       return
     }
 
-    if (items.length === 0) {
-      toast.error('Your cart is empty')
+    if (orderItems.length === 0) {
+      toast.error('No items to checkout')
       return
     }
 
@@ -61,7 +84,11 @@ export default function Checkout() {
     try {
       const { data } = await api.post(
         '/payment/create-cod-order',
-        { deliveryAddress, deliveryPhone },
+        {
+          deliveryAddress,
+          deliveryPhone,
+          buyNowItem: isBuyNow ? { productId: buyNowProductId, qty: buyNowQty } : undefined,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -81,8 +108,8 @@ export default function Checkout() {
       return
     }
 
-    if (items.length === 0) {
-      toast.error('Your cart is empty')
+    if (orderItems.length === 0) {
+      toast.error('No items to checkout')
       return
     }
 
@@ -103,7 +130,12 @@ export default function Checkout() {
         // TEST MODE: Show UPI QR Code
         const { data } = await api.post(
           '/payment/create-order',
-          { amount: total, deliveryAddress, deliveryPhone },
+          {
+            amount: total,
+            deliveryAddress,
+            deliveryPhone,
+            buyNowItem: isBuyNow ? { productId: buyNowProductId, qty: buyNowQty } : undefined,
+          },
           { headers: { Authorization: `Bearer ${token}` } }
         )
         
@@ -124,7 +156,12 @@ export default function Checkout() {
       // Create order
       const { data } = await api.post(
         '/payment/create-order',
-        { amount: total, deliveryAddress, deliveryPhone },
+        {
+          amount: total,
+          deliveryAddress,
+          deliveryPhone,
+          buyNowItem: isBuyNow ? { productId: buyNowProductId, qty: buyNowQty } : undefined,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -235,12 +272,12 @@ export default function Checkout() {
 
   if (loading) return <p className="text-gray-600">Loading...</p>
 
-  if (items.length === 0) {
+  if (orderItems.length === 0) {
     return (
       <div className="card max-w-md mx-auto">
         <div className="card-body text-center">
-          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-          <p className="text-gray-600 mb-4">Add items to your cart before checking out</p>
+          <h2 className="text-xl font-semibold mb-2">No items to checkout</h2>
+          <p className="text-gray-600 mb-4">Add items to your cart or use Buy now from product cards.</p>
           <button className="btn btn-primary" onClick={() => navigate('/')}>
             Continue Shopping
           </button>
@@ -255,6 +292,7 @@ export default function Checkout() {
       {showUpiQr && (
         <UpiQrPayment
           amount={total}
+          orderId={currentOrder?.orderId}
           onSuccess={handleQrPaymentSuccess}
           onCancel={handleQrPaymentCancel}
         />
@@ -345,9 +383,9 @@ export default function Checkout() {
           {/* Order Items */}
           <div className="card">
             <div className="card-body">
-              <h2 className="text-xl font-semibold mb-4">Order Items</h2>
+              <h2 className="text-xl font-semibold mb-4">Order Items {isBuyNow ? '(Buy now)' : ''}</h2>
               <div className="divide-y">
-                {items.map((i) => (
+                {orderItems.map((i) => (
                   <div key={i.product?._id} className="flex items-center gap-4 py-3">
                     <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                       {i.product?.image && (

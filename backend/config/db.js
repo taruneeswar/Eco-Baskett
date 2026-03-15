@@ -1,9 +1,17 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://taruneeswar:tarun123@ecobasket.dsz6boh.mongodb.net/';
-
 module.exports = async function connectDB() {
-  if (!MONGODB_URI) throw new Error('MONGODB_URI is not defined');
-  await mongoose.connect(MONGODB_URI);
-  console.log('MongoDB connected');
+  const MONGODB_URI = process.env.MONGODB_URI || process.env.ATLAS_URI;
+  const dbName = process.env.MONGODB_DB_NAME || process.env.ATLAS_DB_NAME || 'ecobasket';
+
+  if (!MONGODB_URI) {
+    throw new Error('Mongo URI is not defined. Set MONGODB_URI (or ATLAS_URI).');
+  }
+
+  await mongoose.connect(MONGODB_URI, {
+    dbName,
+    serverSelectionTimeoutMS: 10000,
+  });
+
+  console.log(`MongoDB connected (${mongoose.connection.host}/${dbName})`);
 };

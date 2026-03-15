@@ -1,21 +1,77 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
   --eco-green: #16a34a;
   --eco-dark: #0f5132;
+  --eco-cream: #f9f8f1;
 }
 
 html { scroll-behavior: smooth; }
-body { @apply bg-gray-50 text-gray-800; }
+body {
+  font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(110, 231, 183, 0.14), transparent 35%),
+    radial-gradient(circle at 85% 8%, rgba(251, 191, 36, 0.12), transparent 28%),
+    linear-gradient(180deg, #fcfcfb 0%, #f4f7f2 100%);
+  @apply text-gray-800;
+}
+
+#root {
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
 
 .container { @apply max-w-6xl mx-auto px-4; }
 
-.btn { @apply inline-flex items-center justify-center rounded-md px-4 py-2 font-medium transition shadow-sm; }
+.btn { @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition shadow-sm; }
 .btn-primary { @apply bg-emerald-600 text-white hover:bg-emerald-700; }
 .btn-outline { @apply border border-emerald-600 text-emerald-700 hover:bg-emerald-50; }
 
-.card { @apply bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition; }
+.card { @apply bg-white/95 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition; }
 .card-body { @apply p-4; }
 
 .input { @apply w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500; }
 .label { @apply block text-sm font-medium text-gray-700 mb-1; }
+
+.hero-banner {
+  background:
+    linear-gradient(120deg, rgba(5, 150, 105, 0.95) 0%, rgba(16, 185, 129, 0.92) 56%, rgba(245, 158, 11, 0.86) 100%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 10px, rgba(255, 255, 255, 0) 10px 22px);
+  box-shadow: 0 20px 45px rgba(5, 150, 105, 0.24);
+}
+
+.hero-chip {
+  @apply inline-block bg-white/20 rounded-full px-3 py-1 text-xs tracking-wide uppercase font-semibold;
+}
+
+.product-card {
+  @apply border-emerald-200;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfffc 100%);
+}
+
+.quantity-picker {
+  @apply inline-flex items-center gap-2 border border-emerald-200 rounded-lg px-2 py-1;
+}
+
+.quantity-picker button {
+  @apply w-7 h-7 rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50;
+}
+
+.quantity-picker span {
+  @apply w-6 text-center font-semibold text-gray-700;
+}
+
+@media (max-width: 768px) {
+  .btn {
+    @apply min-h-11;
+  }
+
+  .card-body {
+    @apply p-3.5;
+  }
+
+  .container {
+    @apply px-3;
+  }
+}

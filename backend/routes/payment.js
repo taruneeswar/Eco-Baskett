@@ -4,52 +4,102 @@ const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const Product = require('../models/Product');
 
 router.use(auth);
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const isRazorpayConfigured = Boolean(
+  razorpayKeyId
+  && razorpayKeySecret
+  && razorpayKeyId !== 'your_razorpay_key_id_here'
+  && razorpayKeySecret !== 'your_razorpay_key_secret_here'
+);
+
+// Initialize Razorpay only when keys are configured.
+const razorpay = isRazorpayConfigured
+  ? new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret })
+  : null;
 
 // Create Razorpay order
 router.post('/create-order', async (req, res) => {
   try {
-    const { amount, deliveryAddress, deliveryPhone } = req.body;
+    const { amount, deliveryAddress, deliveryPhone, buyNowItem } = req.body;
 
-    if (!amount || amount <= 0) {
+    if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Invalid amount' });
     }
 
-    // Get user's cart
     const user = await User.findById(req.userId).populate('cart.product');
-    if (!user || user.cart.length === 0) {
-      return res.status(400).json({ message: 'Cart is empty' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Create Razorpay order
-    const options = {
-      amount: amount * 100, // Razorpay expects amount in paise
-      currency: 'INR',
-      receipt: `order_${Date.now()}`,
-    };
+    let orderItems = [];
+    let fromCart = true;
 
-    const razorpayOrder = await razorpay.orders.create(options);
+    if (buyNowItem?.productId) {
+      const product = await Product.findById(buyNowItem.productId).lean();
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
 
-    // Create order in database
-    const order = await Order.create({
-      user: req.userId,
-      items: user.cart.map((item) => ({
+      const qty = Math.max(1, Number(buyNowItem.qty) || 1);
+      orderItems = [{
+        product: product._id,
+        name: product.name,
+        price: product.price,
+        qty,
+      }];
+      fromCart = false;
+    } else {
+      if (user.cart.length === 0) {
+        return res.status(400).json({ message: 'Cart is empty' });
+      }
+
+      orderItems = user.cart.map((item) => ({
         product: item.product._id,
         name: item.product.name,
         price: item.product.price,
         qty: item.qty,
-      })),
-      totalAmount: amount,
+      }));
+    }
+
+    const calculatedAmount = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    if (Math.abs(calculatedAmount - Number(amount)) > 0.01) {
+      return res.status(400).json({ message: 'Amount mismatch. Please refresh your cart and try again.' });
+    }
+
+    let razorpayOrder;
+
+    if (isRazorpayConfigured) {
+      const options = {
+        amount: Math.round(calculatedAmount * 100), // Razorpay expects amount in paise
+        currency: 'INR',
+        receipt: `order_${Date.now()}`,
+      };
+
+      razorpayOrder = await razorpay.orders.create(options);
+    } else {
+      // Test mode: create a pseudo-order id so frontend QR flow can continue.
+      razorpayOrder = {
+        id: `test_order_${Date.now()}`,
+        amount: Math.round(calculatedAmount * 100),
+        currency: 'INR',
+      };
+    }
+
+    // Create order in database
+    const order = await Order.create({
+      user: req.userId,
+      items: orderItems,
+      totalAmount: calculatedAmount,
       razorpayOrderId: razorpayOrder.id,
+      paymentMethod: 'online',
       deliveryAddress: deliveryAddress || user.address,
       deliveryPhone: deliveryPhone || user.phone,
+      orderSource: fromCart ? 'cart' : 'buy-now',
     });
 
     res.json({
@@ -75,6 +125,10 @@ router.post('/verify-payment', async (req, res) => {
     if (!isTestMode) {
       // REAL MODE: Verify signature
       const sign = razorpay_order_id + '|' + razorpay_payment_id;
+      if (!isRazorpayConfigured) {
+        return res.status(400).json({ message: 'Razorpay is not configured for real payment verification' });
+      }
+
       const expectedSign = crypto
         .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
         .update(sign.toString())
@@ -100,8 +154,10 @@ router.post('/verify-payment', async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Clear user's cart
-    await User.findByIdAndUpdate(req.userId, { cart: [] });
+    // Clear user's cart only for cart-based orders
+    if (order?.orderSource !== 'buy-now') {
+      await User.findByIdAndUpdate(req.userId, { cart: [] });
+    }
 
     res.json({ message: 'Payment verified successfully', order });
   } catch (err) {
@@ -113,41 +169,65 @@ router.post('/verify-payment', async (req, res) => {
 // Create Cash on Delivery order
 router.post('/create-cod-order', async (req, res) => {
   try {
-    const { deliveryAddress, deliveryPhone } = req.body;
+    const { deliveryAddress, deliveryPhone, buyNowItem } = req.body;
 
     if (!deliveryAddress || !deliveryPhone) {
       return res.status(400).json({ message: 'Delivery address and phone are required' });
     }
 
-    // Get user's cart
     const user = await User.findById(req.userId).populate('cart.product');
-    if (!user || user.cart.length === 0) {
-      return res.status(400).json({ message: 'Cart is empty' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate total
-    const totalAmount = user.cart.reduce((sum, item) => {
-      return sum + (item.product.price * item.qty);
-    }, 0);
+    let orderItems = [];
+    let totalAmount = 0;
+    let fromCart = true;
 
-    // Create COD order in database
-    const order = await Order.create({
-      user: req.userId,
-      items: user.cart.map((item) => ({
+    if (buyNowItem?.productId) {
+      const product = await Product.findById(buyNowItem.productId).lean();
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      const qty = Math.max(1, Number(buyNowItem.qty) || 1);
+      orderItems = [{
+        product: product._id,
+        name: product.name,
+        price: product.price,
+        qty,
+      }];
+      totalAmount = product.price * qty;
+      fromCart = false;
+    } else {
+      if (user.cart.length === 0) {
+        return res.status(400).json({ message: 'Cart is empty' });
+      }
+
+      orderItems = user.cart.map((item) => ({
         product: item.product._id,
         name: item.product.name,
         price: item.product.price,
         qty: item.qty,
-      })),
+      }));
+      totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    }
+
+    // Create COD order in database
+    const order = await Order.create({
+      user: req.userId,
+      items: orderItems,
       totalAmount,
       paymentMethod: 'cod',
       paymentStatus: 'pending', // COD payment is pending until delivery
       deliveryAddress,
       deliveryPhone,
+      orderSource: fromCart ? 'cart' : 'buy-now',
     });
 
-    // Clear user's cart
-    await User.findByIdAndUpdate(req.userId, { cart: [] });
+    if (fromCart) {
+      await User.findByIdAndUpdate(req.userId, { cart: [] });
+    }
 
     res.json({
       message: 'Order placed successfully',

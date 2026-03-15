@@ -11,15 +11,25 @@ const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
-// ✅ CORS setup — allow localhost and local network
+// ✅ CORS setup — allow localhost and local network on any dev port
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'http://192.168.137.221:5173', // Local network access
-      /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // Any local network IP
-      'https://ecobaskett.netlify.app',
-    ],
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+
+      const allowedExact = ['https://ecobaskett.netlify.app'];
+      const allowedPattern = [
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/,
+        /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/,
+      ];
+
+      if (allowedExact.includes(origin) || allowedPattern.some((p) => p.test(origin))) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );

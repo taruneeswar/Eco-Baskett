@@ -2,39 +2,75 @@ import React, { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatINR } from '../utils/format'
 
-export default function UpiQrPayment({ amount, onSuccess, onCancel }) {
-  const [transactionId, setTransactionId] = useState('')
+export default function UpiQrPayment({ amount, orderId, onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false)
+  const [showUpiApps, setShowUpiApps] = useState(false)
 
   // UPI Payment String Format
-  // Replace with your actual UPI ID
-  const upiId = 'merchant@paytm' // Change this to your UPI ID
-  const merchantName = 'Eco Basket'
-  const transactionNote = 'Order Payment'
+  const upiId = import.meta.env.VITE_UPI_ID || 'merchant@paytm'
+  const merchantName = import.meta.env.VITE_UPI_NAME || 'Eco Basket'
+  const transactionNote = import.meta.env.VITE_UPI_NOTE || 'Order Payment'
+  const customQrImageRaw = (import.meta.env.VITE_UPI_QR_IMAGE || '').trim()
+  const customQrImage = customQrImageRaw
+    ? (/^(https?:)?\/\//.test(customQrImageRaw)
+      ? customQrImageRaw
+      : `/${customQrImageRaw.replace(/^\/+/, '')}`)
+    : ''
+  const [showGeneratedQr, setShowGeneratedQr] = useState(!customQrImage)
   
   // Generate UPI string
   const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
 
-  const handleConfirm = async () => {
-    if (!transactionId || transactionId.length < 8) {
-      alert('Please enter a valid transaction ID')
-      return
-    }
+  const upiPayload = upiString.replace('upi://pay?', '')
+  const upiApps = [
+    {
+      key: 'phonepe',
+      name: 'PhonePe',
+      deeplink: `phonepe://pay?${upiPayload}`,
+    },
+    {
+      key: 'gpay',
+      name: 'Google Pay',
+      deeplink: `tez://upi/pay?${upiPayload}`,
+    },
+    {
+      key: 'paytm',
+      name: 'Paytm',
+      deeplink: `paytmmp://pay?${upiPayload}`,
+    },
+    {
+      key: 'bhim',
+      name: 'BHIM',
+      deeplink: `bhim://upi/pay?${upiPayload}`,
+    },
+  ]
 
+  const openSpecificUpiApp = (deeplink) => {
+    // Direct deep-link redirect to selected UPI app.
+    window.location.assign(deeplink)
+  }
+
+  const handleOpenUpi = () => {
+    setShowUpiApps(true)
+    // Primary deep-link API for UPI-capable devices.
+    window.location.href = upiString
+  }
+
+  const handleConfirm = async () => {
     setLoading(true)
     // Simulate verification - In production, verify with your backend
     setTimeout(() => {
       onSuccess({
-        razorpay_payment_id: transactionId,
-        razorpay_signature: 'upi_qr_payment',
-        razorpay_order_id: 'qr_' + Date.now()
+        razorpay_payment_id: `test_payment_${Date.now()}`,
+        razorpay_signature: 'test_signature',
+        razorpay_order_id: orderId,
       })
     }, 1000)
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
+      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 relative shadow-2xl">
         {/* Close Button */}
         <button
           onClick={onCancel}
@@ -43,62 +79,77 @@ export default function UpiQrPayment({ amount, onSuccess, onCancel }) {
           ×
         </button>
 
-        <div className="text-center space-y-6">
-          {/* Title */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Scan & Pay</h2>
-            <p className="text-sm text-gray-600 mt-1">Scan QR code with any UPI app</p>
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900">Complete Online Payment</h2>
+            <p className="text-sm text-gray-600 mt-1">Scan the QR with any UPI app and confirm your payment below.</p>
           </div>
 
-          {/* Amount */}
-          <div className="bg-emerald-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Amount to Pay</div>
-            <div className="text-3xl font-bold text-emerald-600">{formatINR(amount)}</div>
-          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="space-y-4">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <div className="text-xs uppercase tracking-wide text-emerald-700">Amount to pay</div>
+                <div className="text-3xl font-bold text-emerald-700">{formatINR(amount)}</div>
+              </div>
 
-          {/* QR Code */}
-          <div className="bg-white p-6 rounded-xl border-4 border-emerald-500 inline-block">
-            <QRCodeSVG 
-              value={upiString}
-              size={200}
-              level="H"
-              includeMargin={true}
-            />
-          </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-sm space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-600">UPI ID</span>
+                  <span className="font-semibold text-gray-900 break-all text-right">{upiId}</span>
+                </div>
+                <a
+                  href={upiString}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleOpenUpi()
+                  }}
+                  className="block text-center w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold"
+                >
+                  Open UPI App
+                </a>
 
-          {/* UPI Apps */}
-          <div>
-            <p className="text-sm text-gray-600 mb-3">Supported Apps</p>
-            <div className="flex justify-center gap-4 text-2xl">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">📱</div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">💳</div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">🏦</div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">PhonePe • Google Pay • Paytm • BHIM & more</p>
-          </div>
+                {showUpiApps && (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {upiApps.map((app) => (
+                      <button
+                        key={app.key}
+                        type="button"
+                        onClick={() => openSpecificUpiApp(app.deeplink)}
+                        className="py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-xs font-semibold"
+                      >
+                        {app.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          {/* Transaction ID Input */}
-          <div className="text-left space-y-3">
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
-              <p className="font-medium text-yellow-800">After payment:</p>
-              <p className="text-yellow-700">Enter the Transaction ID from your UPI app</p>
+              <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                1. Scan QR in PhonePe, GPay, Paytm or BHIM. 2. Confirm amount {formatINR(amount)}. 3. Tap "Confirm Payment" below.
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transaction ID / UTR Number
-              </label>
-              <input
-                type="text"
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="Enter 12-digit transaction ID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
+              <div className="bg-white p-5 rounded-xl border-4 border-emerald-500 flex items-center justify-center min-h-[260px]">
+                {showGeneratedQr ? (
+                  <QRCodeSVG
+                    value={upiString}
+                    size={220}
+                    level="H"
+                    includeMargin={true}
+                  />
+                ) : (
+                  <img
+                    src={customQrImage}
+                    alt="UPI QR code"
+                    className="w-[220px] h-[220px] object-contain"
+                    onError={() => setShowGeneratedQr(true)}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3">
             <button
               onClick={onCancel}
@@ -110,22 +161,10 @@ export default function UpiQrPayment({ amount, onSuccess, onCancel }) {
             <button
               onClick={handleConfirm}
               className="flex-1 btn btn-primary"
-              disabled={loading || !transactionId}
+              disabled={loading}
             >
               {loading ? 'Verifying...' : 'Confirm Payment'}
             </button>
-          </div>
-
-          {/* Instructions */}
-          <div className="text-xs text-gray-500 text-left bg-gray-50 rounded-lg p-3">
-            <p className="font-semibold mb-1">How to pay:</p>
-            <ol className="list-decimal list-inside space-y-1">
-              <li>Open any UPI app (PhonePe, Google Pay, etc.)</li>
-              <li>Scan the QR code above</li>
-              <li>Verify amount {formatINR(amount)}</li>
-              <li>Complete payment</li>
-              <li>Enter Transaction ID above</li>
-            </ol>
           </div>
         </div>
       </div>

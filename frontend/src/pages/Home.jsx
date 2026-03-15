@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuth } from '../state/AuthContext'
 import ProductCard from '../components/ProductCard'
 import toast from 'react-hot-toast'
 
 export default function Home() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -23,15 +25,24 @@ export default function Home() {
     })()
   }, [])
 
-  const addToCart = async (productId) => {
+  const addToCart = async (productId, qty = 1) => {
     if (!token) return toast.error('Please sign in to add to cart')
     try {
-      await api.post('/cart/add', { productId, qty: 1 }, { headers: { Authorization: `Bearer ${token}` } })
-      toast.success('Added to cart')
+      await api.post('/cart/add', { productId, qty }, { headers: { Authorization: `Bearer ${token}` } })
+      toast.success(`Added ${qty} item${qty > 1 ? 's' : ''} to cart`)
     } catch (err) {
       console.error('Add to cart error:', err)
       toast.error(err?.response?.data?.message || 'Failed to add to cart')
     }
+  }
+
+  const buyNow = (productId, qty = 1) => {
+    if (!token) {
+      toast.error('Please sign in to continue')
+      navigate('/signin')
+      return
+    }
+    navigate(`/checkout?buyNow=${productId}&qty=${qty}`)
   }
 
   if (loading) return <p className="text-gray-600">Loading...</p>
@@ -39,11 +50,12 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <section className="bg-emerald-600 rounded-2xl text-white p-8 flex items-center">
-        <div className="max-w-xl">
-          <h1 className="text-3xl md:text-4xl font-bold">Fresh. Organic. Delivered.</h1>
-          <p className="mt-2 text-emerald-100">Shop eco-friendly groceries and essentials at the best prices.</p>
-          <a href="#products" className="btn btn-outline mt-4 bg-white/10 border-white text-white hover:bg-white/20">Shop now</a>
+      <section className="hero-banner rounded-3xl text-white p-6 md:p-10 flex items-center">
+        <div className="max-w-2xl">
+          <p className="hero-chip">Daily essentials with faster checkout</p>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight mt-3">Fresh groceries with Atlas-backed reliability and instant Buy Now flow.</h1>
+          <p className="mt-3 text-emerald-50 max-w-xl">Choose quantity on every item, order in one click, and pay online with UPI QR or cash on delivery.</p>
+          <a href="#products" className="btn btn-outline mt-5 bg-white/10 border-white text-white hover:bg-white/20">Shop now</a>
         </div>
       </section>
 
@@ -53,7 +65,7 @@ export default function Home() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {products.map(p => (
-            <ProductCard key={p._id} product={p} onAdd={addToCart} />
+            <ProductCard key={p._id} product={p} onAdd={addToCart} onBuyNow={buyNow} />
           ))}
         </div>
       </section>

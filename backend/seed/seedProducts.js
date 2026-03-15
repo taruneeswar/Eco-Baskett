@@ -36,6 +36,19 @@ const products = [
   { name: 'Cheese', description: 'Cheddar cheese 200g', price: 199, image: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=60', category: 'Dairy' },
   { name: 'Ghee', description: 'Pure cow ghee 500ml', price: 499, image: 'https://m.media-amazon.com/images/I/51cAnoCvWkL._AC_UF894,1000_QL80_.jpg', category: 'Dairy' },
   { name: 'Curd', description: 'Fresh dahi 500g', price: 60, image: 'https://tiimg.tistatic.com/fp/2/007/729/1-kilograms-original-taste-smooth-natural-healthy-delicious-fresh-curd-058.jpg', category: 'Dairy' },
+
+  { name: 'Oranges', description: 'Juicy oranges 1kg', price: 99, image: 'https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&w=800&q=60', category: 'Fruits' },
+  { name: 'Black Grapes', description: 'Seedless black grapes 500g', price: 129, image: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=800&q=60', category: 'Fruits' },
+  { name: 'Carrots', description: 'Fresh carrots 1kg', price: 59, image: 'https://images.unsplash.com/photo-1447175008436-170170753d52?auto=format&fit=crop&w=800&q=60', category: 'Vegetables' },
+  { name: 'Cauliflower', description: 'Farm fresh cauliflower 1pc', price: 45, image: 'https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?auto=format&fit=crop&w=800&q=60', category: 'Vegetables' },
+  { name: 'Green Peas', description: 'Tender green peas 500g', price: 79, image: 'https://images.unsplash.com/photo-1566843972142-a7fcb70de55a?auto=format&fit=crop&w=800&q=60', category: 'Vegetables' },
+  { name: 'Basmati Rice', description: 'Premium basmati rice 1kg', price: 169, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=60', category: 'Grains' },
+  { name: 'Rolled Oats', description: 'Healthy rolled oats 1kg', price: 199, image: 'https://images.unsplash.com/photo-1515543904379-3d757afe72e1?auto=format&fit=crop&w=800&q=60', category: 'Breakfast' },
+  { name: 'Moong Dal', description: 'Split yellow moong dal 1kg', price: 149, image: 'https://images.unsplash.com/photo-1586201375791-83865001e31d?auto=format&fit=crop&w=800&q=60', category: 'Pulses' },
+  { name: 'Groundnut Oil', description: 'Cold pressed groundnut oil 1L', price: 249, image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=60', category: 'Oil' },
+  { name: 'Jaggery Powder', description: 'Natural jaggery powder 500g', price: 99, image: 'https://images.unsplash.com/photo-1615485925873-7ec3d22d8c73?auto=format&fit=crop&w=800&q=60', category: 'Pantry' },
+  { name: 'Tofu', description: 'Protein-rich tofu 200g', price: 120, image: 'https://images.unsplash.com/photo-1604908811827-1dd6d82de5b3?auto=format&fit=crop&w=800&q=60', category: 'Dairy Alternatives' },
+  { name: 'Coconut Water', description: 'Natural tender coconut water 1L', price: 89, image: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b3?auto=format&fit=crop&w=800&q=60', category: 'Beverages' },
 ];
 
 (async () => {

@@ -17,7 +17,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="container py-6">
+      <main className="container py-5 md:py-6 pb-24 md:pb-6">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
