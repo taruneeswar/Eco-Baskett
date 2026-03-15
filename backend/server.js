@@ -42,6 +42,13 @@ app.get('/', (req, res) => {
   res.send('Eco Basket API');
 });
 
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Eco Basket API is running',
+    endpoints: ['/api/products', '/api/auth', '/api/cart', '/api/payment'],
+  });
+});
+
 // Backward-compatible routes for clients still calling without /api prefix.
 app.get('/products', (req, res) => {
   res.redirect(307, '/api/products');
