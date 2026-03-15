@@ -6,10 +6,13 @@ const auth = require('../middleware/auth');
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, phone, address } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'All fields are required' });
-    const exists = await User.findOne({ email });
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!name || !normalizedEmail || !password) return res.status(400).json({ message: 'All fields are required' });
+
+    const exists = await User.findOne({ email: normalizedEmail });
     if (exists) return res.status(400).json({ message: 'Email already in use' });
-    const user = await User.create({ name, email, password, phone, address });
+    const user = await User.create({ name, email: normalizedEmail, password, phone, address });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'devsecret', { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address } });
   } catch (err) {
@@ -21,7 +24,13 @@ router.post('/signup', async (req, res) => {
 router.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
     const ok = await user.comparePassword(password);
     if (!ok) return res.status(400).json({ message: 'Invalid credentials' });
