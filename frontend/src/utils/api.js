@@ -9,7 +9,14 @@ function normalizeApiBaseUrl(rawUrl) {
   const trimmed = rawUrl.trim().replace(/\/+$/, '')
   if (!trimmed) return ''
 
-  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+  try {
+    const parsed = new URL(trimmed)
+    const path = parsed.pathname.replace(/\/+$/, '')
+    parsed.pathname = path.endsWith('/api') ? path : `${path}/api`
+    return parsed.toString().replace(/\/+$/, '')
+  } catch {
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+  }
 }
 
 const resolvedBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL)
