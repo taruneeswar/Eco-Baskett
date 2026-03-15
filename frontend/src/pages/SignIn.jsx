@@ -13,10 +13,11 @@ export default function SignIn() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    console.log('🔐 Attempting sign-in with:', email)
+    const normalizedEmail = email.trim().toLowerCase()
+    console.log('🔐 Attempting sign-in with:', normalizedEmail)
     console.log('📍 API Base URL:', import.meta.env.VITE_API_URL)
     try {
-      const res = await api.post('/auth/signin', { email, password })
+      const res = await api.post('/auth/signin', { email: normalizedEmail, password })
       console.log('✅ Sign-in successful:', res.data)
       signIn(res.data.token, res.data.user)
       navigate('/')

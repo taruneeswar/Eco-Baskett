@@ -14,8 +14,9 @@ export default function SignUp() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    const normalizedEmail = email.trim().toLowerCase()
     try {
-      const res = await api.post('/auth/signup', { name, email, password })
+      const res = await api.post('/auth/signup', { name, email: normalizedEmail, password })
       signIn(res.data.token, res.data.user)
       navigate('/')
     } catch (e) {
