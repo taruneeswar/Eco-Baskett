@@ -22,6 +22,7 @@ app.use(
         /^http:\/\/localhost:\d+$/,
         /^http:\/\/127\.0\.0\.1:\d+$/,
         /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/,
+        /^https:\/\/[a-z0-9-]+--ecobaskett\.netlify\.app$/,
       ];
 
       if (allowedExact.includes(origin) || allowedPattern.some((p) => p.test(origin))) {
