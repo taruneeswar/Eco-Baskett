@@ -49,14 +49,11 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Backward-compatible routes for clients still calling without /api prefix.
-app.get('/products', (req, res) => {
-  res.redirect(307, '/api/products');
-});
-
-app.get('/products/:id', (req, res) => {
-  res.redirect(307, `/api/products/${req.params.id}`);
-});
+// Backward-compatible route mounts for clients still calling without /api prefix.
+app.use('/auth', authRoutes);
+app.use('/products', productRoutes);
+app.use('/cart', cartRoutes);
+app.use('/payment', paymentRoutes);
 
 // ✅ Database test route
 app.get('/test-db', async (req, res) => {
